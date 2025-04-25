@@ -1,12 +1,97 @@
-# Uncanny_Eyes
+# ESP32 Uncanny Eyes
 
-'Uncanny eyes' for Adafruit 1.5" OLED (product #1431) or 1.44" TFT LCD (#2088).  Works on PJRC Teensy 3.x and on Adafruit M0 and M4 boards (Feather, Metro, etc.).  This code uses features specific to these boards and WILL NOT work on normal Arduino or other boards!
+这是不可思议眼睛项目(Uncanny Eyes)的ESP32移植版本。原始项目设计用于Teensy和其他Adafruit微控制器，此版本已修改为在ESP32上运行。
 
-How-to guide with parts list and 3D models is here:
-https://learn.adafruit.com/animated-electronic-eyes-using-teensy-3-1/overview
+## 硬件要求
 
-Teensy 3.x w/OLED screens: use 72 MHz board speed -- 96 MHz requires throttling back SPI bitrate and actually runs slower!
+- ESP32开发板 (如NodeMCU ESP32, WROOM32, 等)
+- 支持的显示器:
+  - 1.44" 或 1.8" TFT LCD (ST7735)
+  - 1.5" OLED (SSD1351)
+  - 1.3" 或 1.54" TFT LCD (ST7789)
+- 跳线/杜邦线
+- 面包板(可选)
+- 光敏电阻(可选，用于瞳孔反应)
+- 按钮(可选，用于眨眼功能)
 
-Directory 'uncannyEyes' contains Arduino sketch for PJRC Teensy 3.1 & Adafruit M0 & M4. 'graphics' subfolder has various eye designs, as #include-able header files.
+## 接线图
 
-Folder 'convert' contains Python sketch for generating graphics header files. Requires Python Imaging Library. Example images are also in this directory.
+### ESP32与ST7735显示器接线
+
+| ST7735引脚 | ESP32引脚 |
+|------------|----------|
+| VCC        | 3.3V     |
+| GND        | GND      |
+| CS         | 5        |
+| RESET      | 15       |
+| DC/RS      | 2        |
+| MOSI/SDA   | 23       |
+| SCK/SCL    | 18       |
+| LED        | 3.3V或GPIO以控制亮度 |
+| MISO       | 不连接    |
+
+**注意**: 可以修改config.h文件中的引脚定义以适应您的具体连接。
+
+## 软件配置
+
+### 必需的库
+
+1. **Adafruit GFX库**
+2. **Adafruit ST7735库** (如果使用ST7735显示器)
+3. **Adafruit SSD1351库** (如果使用OLED显示器)
+4. **Adafruit ST7789库** (如果使用ST7789显示器)
+
+### 安装方法
+
+1. 打开Arduino IDE
+2. 转到 菜单 > 工具 > 管理库
+3. 搜索并安装上述库
+
+## 修改说明
+
+与原始Teensy版本相比，此ESP32版本的主要更改包括：
+
+1. **SPI配置**：ESP32使用特定的硬件SPI引脚和配置
+2. **内存管理**：优化以适应ESP32的内存结构
+3. **显示驱动**：修改以支持ESP32的SPI接口
+4. **引脚定义**：更新为使用ESP32的GPIO引脚
+
+## 使用方法
+
+1. 按照接线图连接您的ESP32和显示器
+2. 在Arduino IDE中确保已安装所有必需的库
+3. 打开此项目在Arduino IDE中
+4. 从工具菜单中选择正确的ESP32板型
+5. 编译并上传代码
+
+## 配置选项
+
+您可以在`config.h`文件中修改以下设置：
+
+- **屏幕类型**：选择显示器类型
+- **引脚配置**：调整GPIO引脚分配
+- **眼睛类型**：选择不同的眼睛样式
+- **光线反应**：启用或禁用瞳孔对光线的反应
+- **自动眨眼**：配置自动眨眼功能
+
+## 故障排除
+
+- **显示无输出**：检查接线和CS引脚配置
+- **显示器颜色错误**：尝试不同的显示器初始化参数
+- **编译错误**：确保已安装所有必需的库
+- **运行不稳定**：调整SPI速度或内存设置
+
+## 性能提示
+
+- 降低SPI频率可能会提高稳定性
+- ESP32上使用DMA可以提高显示性能
+- 调整`PIXEL_DOUBLE`设置可能会提高帧率
+
+## 许可证
+
+此项目遵循MIT许可证，与原始Adafruit项目相同。
+
+## 致谢
+
+- 原始项目由Phil Burgess / Paint Your Dragon为Adafruit Industries开发
+- 感谢ESP32和显示器库的所有贡献者

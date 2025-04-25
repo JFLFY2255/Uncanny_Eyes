@@ -22,6 +22,9 @@
 #ifdef ARDUINO_ARCH_SAMD
   #include <Adafruit_ZeroDMA.h>
 #endif
+#ifdef ARDUINO_ARCH_ESP32
+  #include <Arduino.h>
+#endif
 
 typedef struct {        // Struct is defined before including config.h --
   int8_t  select;       // pin numbers for each eye's screen select line
@@ -105,6 +108,13 @@ struct {                // One-per-eye structure
  #else
   uint16_t          dmaBuf[2][128]; // Two 128-pixel buffers
  #endif
+#elif defined(ARDUINO_ARCH_ESP32)
+  uint8_t           dmaIdx = 0; // Active DMA buffer # (alternate fill/send)
+ #ifdef PIXEL_DOUBLE
+  uint32_t          dmaBuf[2][240]; // Two 240-pixel buffers (32bit for doubling)
+ #else
+  uint16_t          dmaBuf[2][128]; // Two 128-pixel buffers
+ #endif
 #endif
 
 uint32_t startTime;  // For FPS indicator
@@ -155,7 +165,12 @@ void setup(void) {
   Serial.begin(115200);
   //while (!Serial);
   Serial.println("Init");
+  
+#ifdef ARDUINO_ARCH_ESP32
+  randomSeed(analogRead(36)); // Seed random() from floating analog input on ESP32
+#else
   randomSeed(analogRead(A3)); // Seed random() from floating analog input
+#endif
 
 #ifdef DISPLAY_BACKLIGHT
   // Enable backlight pin, initially off
@@ -164,20 +179,40 @@ void setup(void) {
   digitalWrite(DISPLAY_BACKLIGHT, LOW);
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+  // Initialize SPI for ESP32
+  SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
+#endif
+
   user_setup();
 
   // Initialize eye objects based on eyeInfo list in config.h:
   for(e=0; e<NUM_EYES; e++) {
     Serial.print("Create display #"); Serial.println(e);
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
+ #ifdef ARDUINO_ARCH_ESP32
+    eye[e].display     = new displayType(&SPI, eyeInfo[e].select,
+                           DISPLAY_DC, -1);
+ #else
     eye[e].display     = new displayType(&TFT_SPI, eyeInfo[e].select,
                            DISPLAY_DC, -1);
+ #endif
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // 128x128 TFT
+ #ifdef ARDUINO_ARCH_ESP32
+    eye[e].display     = new displayType(&SPI, eyeInfo[e].select,
+                           DISPLAY_DC, -1);
+ #else
     eye[e].display     = new displayType(&TFT_SPI, eyeInfo[e].select,
                            DISPLAY_DC, -1);
+ #endif
 #else // OLED
+ #ifdef ARDUINO_ARCH_ESP32
+    eye[e].display     = new displayType(128, 128, &SPI,
+                           eyeInfo[e].select, DISPLAY_DC, -1);
+ #else
     eye[e].display     = new displayType(128, 128, &TFT_SPI,
                            eyeInfo[e].select, DISPLAY_DC, -1);
+ #endif
 #endif
     eye[e].blink.state = NOBLINK;
     // If project involves only ONE eye and NO other SPI devices, its
@@ -407,7 +442,11 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
   // Set up raw pixel dump to entire screen.  Although such writes can wrap
   // around automatically from end of rect back to beginning, the region is
   // reset on each frame here in case of an SPI glitch.
+#ifdef ARDUINO_ARCH_ESP32
+  SPI.beginTransaction(settings);
+#else
   TFT_SPI.beginTransaction(settings);
+#endif
   digitalWrite(eyeInfo[e].select, LOW);                // Chip select
 
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
@@ -427,7 +466,7 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
   scleraXsave = scleraX + SCREEN_X_START; // Save initial X value to reset on each line
   irisY       = scleraY - (SCLERA_HEIGHT - IRIS_HEIGHT) / 2;
   for(screenY=SCREEN_Y_START; screenY<SCREEN_Y_END; screenY++, scleraY++, irisY++) {
-#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52)
+#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52) || defined(ARDUINO_ARCH_ESP32)
  #ifdef PIXEL_DOUBLE
     uint32_t *ptr = &dmaBuf[dmaIdx][0];
  #else
@@ -454,7 +493,7 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
           p = sclera[scleraY][scleraX];                 // Pixel = sclera
         }
       }
-#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52)
+#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52) || defined(ARDUINO_ARCH_ESP32)
  #ifdef PIXEL_DOUBLE
       // Swap bytes, duplicate low 16 to high 16 bits, store in DMA buf
       *ptr++ = __builtin_bswap16(p) * 0x00010001;
@@ -494,12 +533,16 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
     // Block on last scanline
     eye[e].display->writePixels((uint16_t *)&dmaBuf[dmaIdx], sizeof dmaBuf[0] / 2, (screenY == (SCREEN_Y_END-1)), true);
     dmaIdx = 1 - dmaIdx;
+#elif defined(ARDUINO_ARCH_ESP32)
+    // ESP32 writePixels implementation
+    eye[e].display->writePixels((uint16_t *)&dmaBuf[dmaIdx], sizeof dmaBuf[0] / 2, (screenY == (SCREEN_Y_END-1)), true);
+    dmaIdx = 1 - dmaIdx;
 #endif
   } // end scanline
 
 #ifdef ARDUINO_ARCH_SAMD
   while(dma_busy);  // Wait for last scanline to transmit
-#elif !defined(ARDUINO_ARCH_NRF52)
+#elif !defined(ARDUINO_ARCH_NRF52) && !defined(ARDUINO_ARCH_ESP32)
   // Teensy 3.x
   KINETISK_SPI0.SR |= SPI_SR_TCF;         // Clear transfer flag
   while((KINETISK_SPI0.SR & 0xF000) ||    // Wait for SPI FIFO to drain
@@ -507,7 +550,11 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
 #endif
 
   digitalWrite(eyeInfo[e].select, HIGH);          // Deselect
+#ifdef ARDUINO_ARCH_ESP32
+  SPI.endTransaction();
+#else
   TFT_SPI.endTransaction();
+#endif
 }
 
 // EYE ANIMATION -----------------------------------------------------------

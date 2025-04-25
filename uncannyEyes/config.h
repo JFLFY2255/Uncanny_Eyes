@@ -1,3 +1,6 @@
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
+
 // Pin selections here are based on the original Adafruit Learning System
 // guide for the Teensy 3.x project.  Some of these pin numbers don't even
 // exist on the smaller SAMD M0 & M4 boards, so you may need to make other
@@ -47,6 +50,9 @@ eyeInfo_t eyeInfo[] = {
   { A6, -1, 2 }, // SINGLE EYE display-select and wink pins, rotate 180
 #elif defined(ADAFRUIT_TRINKET_M0)
   {  0, -1, 0 }, // SINGLE EYE display-select, no wink, no rotation
+#elif defined(ARDUINO_ARCH_ESP32)
+  { 41, -1, 0 }, // LEFT EYE display-select and wink pins, no rotation
+  { 41, -1, 0 }, // RIGHT EYE display-select and wink pins, no rotation
 #else
   {  9, 0, 0 }, // LEFT EYE display-select and wink pins, no rotation
   { 10, 2, 0 }, // RIGHT EYE display-select and wink pins, no rotation
@@ -58,6 +64,11 @@ eyeInfo_t eyeInfo[] = {
 #if defined(ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS)
   #define TFT_SPI        SPI1
   #define TFT_PERIPH     PERIPH_SPI1
+#elif defined(ARDUINO_ARCH_ESP32)
+  #define TFT_SPI        SPI
+  #define TFT_MOSI       47  // SDA 数据信号
+  #define TFT_SCLK       21  // SCL 时钟线
+  #define TFT_MISO       -1  // 不使用
 #else
   #define TFT_SPI        SPI
   #define TFT_PERIPH     PERIPH_SPI
@@ -78,6 +89,12 @@ eyeInfo_t eyeInfo[] = {
   #define DISPLAY_RESET     -1 // Display reset pin
   #define DISPLAY_BACKLIGHT A3
   #define BACKLIGHT_MAX    255
+#elif defined(ARDUINO_ARCH_ESP32)
+  #include <Adafruit_ST7735.h>  // TFT display library (enable one only)
+  #define DISPLAY_DC        40  // DC 数据选择
+  #define DISPLAY_RESET     45  // RES 复位
+  #define DISPLAY_BACKLIGHT 42  // BLK 背光
+  #define BACKLIGHT_MAX    255  // 背光最大值
 #else
   // Enable ONE of these #includes to specify the display type being used
   //#include <Adafruit_SSD1351.h>  // OLED display library -OR-
@@ -94,6 +111,8 @@ eyeInfo_t eyeInfo[] = {
 #if defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_)
  #if defined(ARDUINO_ARCH_NRF52)
   #define SPI_FREQ 32000000    // TFT: use max SPI
+ #elif defined(ARDUINO_ARCH_ESP32)
+  #define SPI_FREQ 27000000    // ESP32: 降低SPI速度以确保稳定
  #else
   #define SPI_FREQ 24000000    // TFT: use max SPI
  #endif
@@ -136,6 +155,12 @@ eyeInfo_t eyeInfo[] = {
   #define LIGHT_MAX     980 // Maximum useful reading from sensor
   #define BLINK_PIN       4 // Pin for manual blink button (BOTH eyes)
   #define PIXEL_DOUBLE      // Use 2x2 pixels on 240x240 display
+#elif defined(ARDUINO_ARCH_ESP32)
+  #define LIGHT_PIN      36 // ESP32 光敏电阻引脚
+  #define LIGHT_CURVE  0.33 // 光敏电阻调整曲线
+  #define LIGHT_MIN      30 // 光敏电阻最小有效读数
+  #define LIGHT_MAX     980 // 光敏电阻最大有效读数
+  #define BLINK_PIN      14 // 眨眼按钮引脚
 #elif defined(ADAFRUIT_TRINKET_M0)
   #define BLINK_PIN      -1 // No blink pin
   #define LIGHT_PIN      -1 // No photocell
@@ -153,3 +178,5 @@ eyeInfo_t eyeInfo[] = {
 #if !defined(IRIS_MAX)
   #define IRIS_MAX      720 // Iris size (0-1023) in darkest light
 #endif
+
+#endif // _CONFIG_H_
