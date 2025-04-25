@@ -8,6 +8,10 @@
 
 // GRAPHICS SETTINGS (appearance of eye) -----------------------------------
 
+// 定义ST7735屏幕分辨率
+#define ST7735_SCREEN_WIDTH  80   // 屏幕宽度，默认80像素
+#define ST7735_SCREEN_HEIGHT 160  // 屏幕高度，默认160像素
+
 // If using a SINGLE EYE, you might want this next line enabled, which
 // uses a simpler "football-shaped" eye that's left/right symmetrical.
 // Default shape includes the caruncle, creating distinct left/right eyes.
@@ -15,7 +19,7 @@
 #if defined(ADAFRUIT_HALLOWING) || defined(ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS) || defined(ARDUINO_NRF52840_CIRCUITPLAY)
   #define SYMMETRICAL_EYELID
 #else                     // Otherwise your choice, standard is asymmetrical
-  //#define SYMMETRICAL_EYELID
+  #define SYMMETRICAL_EYELID  // 启用对称眼睑，适合单眼显示
 #endif
 
 // Enable ONE of these #includes -- HUGE graphics tables for various eyes:
@@ -51,8 +55,7 @@ eyeInfo_t eyeInfo[] = {
 #elif defined(ADAFRUIT_TRINKET_M0)
   {  0, -1, 0 }, // SINGLE EYE display-select, no wink, no rotation
 #elif defined(ARDUINO_ARCH_ESP32)
-  { 41, -1, 0 }, // LEFT EYE display-select and wink pins, no rotation
-  { 41, -1, 0 }, // RIGHT EYE display-select and wink pins, no rotation
+  { 41, -1, 1 }, // 改为旋转值为1（90度旋转），尝试更好地适应80x160屏幕
 #else
   {  9, 0, 0 }, // LEFT EYE display-select and wink pins, no rotation
   { 10, 2, 0 }, // RIGHT EYE display-select and wink pins, no rotation
@@ -69,6 +72,10 @@ eyeInfo_t eyeInfo[] = {
   #define TFT_MOSI       47  // SDA 数据信号
   #define TFT_SCLK       21  // SCL 时钟线
   #define TFT_MISO       -1  // 不使用
+  // ESP32-S3的FSPI频率设置
+  #define SPI_BUS        FSPI
+  // 添加以下定义，用于SPI初始化
+  #define VSPI_MODE 0
 #else
   #define TFT_SPI        SPI
   #define TFT_PERIPH     PERIPH_SPI
@@ -95,6 +102,13 @@ eyeInfo_t eyeInfo[] = {
   #define DISPLAY_RESET     45  // RES 复位
   #define DISPLAY_BACKLIGHT 42  // BLK 背光
   #define BACKLIGHT_MAX    255  // 背光最大值
+  
+  // 定义屏幕宽度和高度常量
+  #define SCREEN_WIDTH    ST7735_SCREEN_WIDTH
+  #define SCREEN_HEIGHT   ST7735_SCREEN_HEIGHT
+  
+  // 为80x160屏幕启用像素加倍，使图形能更好地适应
+  #define PIXEL_DOUBLE
 #else
   // Enable ONE of these #includes to specify the display type being used
   //#include <Adafruit_SSD1351.h>  // OLED display library -OR-
@@ -112,7 +126,7 @@ eyeInfo_t eyeInfo[] = {
  #if defined(ARDUINO_ARCH_NRF52)
   #define SPI_FREQ 32000000    // TFT: use max SPI
  #elif defined(ARDUINO_ARCH_ESP32)
-  #define SPI_FREQ 27000000    // ESP32: 降低SPI速度以确保稳定
+  #define SPI_FREQ 80000000    // ESP32: 使用最大SPI速度 (80MHz)
  #else
   #define SPI_FREQ 24000000    // TFT: use max SPI
  #endif

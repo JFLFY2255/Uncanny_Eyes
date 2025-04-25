@@ -182,6 +182,12 @@ void setup(void) {
 #ifdef ARDUINO_ARCH_ESP32
   // Initialize SPI for ESP32
   SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
+  SPI.setFrequency(SPI_FREQ);
+  SPI.setDataMode(VSPI_MODE);
+  Serial.println("ESP32 SPI initialized with custom pins");
+  Serial.print("MOSI: "); Serial.println(TFT_MOSI);
+  Serial.print("SCLK: "); Serial.println(TFT_SCLK);
+  Serial.print("Frequency: "); Serial.println(SPI_FREQ);
 #endif
 
   user_setup();
@@ -254,8 +260,31 @@ void setup(void) {
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
     eye[e].display->init(240, 240);
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // 128x128 TFT
+ #ifdef ARDUINO_ARCH_ESP32
+    // 更详细的ST7735初始化，包括额外延迟和初始化监控
+    Serial.print("Initializing ST7735 display #"); Serial.print(e);
+    Serial.print(" with dimensions "); Serial.print(ST7735_SCREEN_WIDTH);
+    Serial.print("x"); Serial.println(ST7735_SCREEN_HEIGHT);
+    
+    // 尝试重置显示器
+    if(DISPLAY_RESET >= 0) {
+      pinMode(DISPLAY_RESET, OUTPUT);
+      digitalWrite(DISPLAY_RESET, HIGH);
+      delay(50);
+      digitalWrite(DISPLAY_RESET, LOW);
+      delay(50);
+      digitalWrite(DISPLAY_RESET, HIGH);
+      delay(50);
+    }
+    
+    eye[e].display->initR(INITR_MINI160x80); // 使用80x160分辨率的初始化参数
+    delay(100); // 添加延迟让显示器稳定
+    
+    Serial.println("ST7735 initialization complete");
+ #else
     eye[e].display->initR(INITR_144GREENTAB);
     Serial.print("Init ST77xx display #"); Serial.println(e);
+ #endif
 #else // OLED
     eye[e].display->begin(SPI_FREQ);
 #endif
@@ -292,7 +321,10 @@ void setup(void) {
   #ifdef DISPLAY_BACKLIGHT
     int i;
     Serial.println("Fade in backlight");
-    analogWriteResolution(8);
+    #ifndef ARDUINO_ARCH_ESP32
+      // 非ESP32平台需要设置分辨率
+      analogWriteResolution(8);
+    #endif
     for(i=0; i<=BACKLIGHT_MAX; i++) { // Fade logo in
       analogWrite(DISPLAY_BACKLIGHT, i);
       delay(2);
@@ -452,7 +484,11 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
   eye[e].display->setAddrWindow(0, 0, 240, 240);
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // TFT
+ #ifdef ARDUINO_ARCH_ESP32
+  eye[e].display->setAddrWindow(0, 0, ST7735_SCREEN_HEIGHT, ST7735_SCREEN_WIDTH);
+ #else
   eye[e].display->setAddrWindow(0, 0, 128, 128);
+ #endif
 #else // OLED
   eye[e].display->writeCommand(SSD1351_CMD_SETROW);    // Y range
   eye[e].display->spiWrite(0); eye[e].display->spiWrite(SCREEN_HEIGHT - 1);
