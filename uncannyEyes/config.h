@@ -9,8 +9,8 @@
 // GRAPHICS SETTINGS (appearance of eye) -----------------------------------
 
 // 定义ST7735屏幕分辨率
-#define ST7735_SCREEN_WIDTH  80   // 屏幕宽度，默认80像素
-#define ST7735_SCREEN_HEIGHT 160  // 屏幕高度，默认160像素
+#define ST7735_SCREEN_WIDTH  128  // 屏幕宽度，默认128像素
+#define ST7735_SCREEN_HEIGHT 128  // 屏幕高度，默认128像素
 
 // If using a SINGLE EYE, you might want this next line enabled, which
 // uses a simpler "football-shaped" eye that's left/right symmetrical.
@@ -55,7 +55,7 @@ eyeInfo_t eyeInfo[] = {
 #elif defined(ADAFRUIT_TRINKET_M0)
   {  0, -1, 0 }, // SINGLE EYE display-select, no wink, no rotation
 #elif defined(ARDUINO_ARCH_ESP32)
-  { 41, -1, 1 }, // 改为旋转值为1（90度旋转），尝试更好地适应80x160屏幕
+  { 41, -1, 0 },
 #else
   {  9, 0, 0 }, // LEFT EYE display-select and wink pins, no rotation
   { 10, 2, 0 }, // RIGHT EYE display-select and wink pins, no rotation
@@ -72,10 +72,6 @@ eyeInfo_t eyeInfo[] = {
   #define TFT_MOSI       47  // SDA 数据信号
   #define TFT_SCLK       21  // SCL 时钟线
   #define TFT_MISO       -1  // 不使用
-  // ESP32-S3的FSPI频率设置
-  #define SPI_BUS        FSPI
-  // 添加以下定义，用于SPI初始化
-  #define VSPI_MODE 0
 #else
   #define TFT_SPI        SPI
   #define TFT_PERIPH     PERIPH_SPI
@@ -106,9 +102,6 @@ eyeInfo_t eyeInfo[] = {
   // 定义屏幕宽度和高度常量
   #define SCREEN_WIDTH    ST7735_SCREEN_WIDTH
   #define SCREEN_HEIGHT   ST7735_SCREEN_HEIGHT
-  
-  // 为80x160屏幕启用像素加倍，使图形能更好地适应
-  #define PIXEL_DOUBLE
 #else
   // Enable ONE of these #includes to specify the display type being used
   //#include <Adafruit_SSD1351.h>  // OLED display library -OR-

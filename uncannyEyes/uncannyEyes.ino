@@ -182,12 +182,6 @@ void setup(void) {
 #ifdef ARDUINO_ARCH_ESP32
   // Initialize SPI for ESP32
   SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
-  SPI.setFrequency(SPI_FREQ);
-  SPI.setDataMode(VSPI_MODE);
-  Serial.println("ESP32 SPI initialized with custom pins");
-  Serial.print("MOSI: "); Serial.println(TFT_MOSI);
-  Serial.print("SCLK: "); Serial.println(TFT_SCLK);
-  Serial.print("Frequency: "); Serial.println(SPI_FREQ);
 #endif
 
   user_setup();
@@ -277,7 +271,8 @@ void setup(void) {
       delay(50);
     }
     
-    eye[e].display->initR(INITR_MINI160x80); // 使用80x160分辨率的初始化参数
+    // eye[e].display->initR(INITR_MINI160x80); // 使用80x160分辨率的初始化参数
+    eye[e].display->initR(INITR_144GREENTAB);
     delay(100); // 添加延迟让显示器稳定
     
     Serial.println("ST7735 initialization complete");
