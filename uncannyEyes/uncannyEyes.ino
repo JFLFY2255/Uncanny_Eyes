@@ -97,7 +97,7 @@ struct {                // One-per-eye structure
   uint32_t          dmaBuf[2][120]; // Two 120-pixel buffers (32bit for doubling)
   DmacDescriptor   *descriptor[2];  // Pair of descriptors for doubled scanlines
  #else
-  uint16_t          dmaBuf[2][128]; // Two 128-pixel buffers
+  uint16_t          dmaBuf[2][ST77XX_SCREEN_WIDTH]; // 使用屏幕宽度定义缓冲区大小
   DmacDescriptor   *descriptor;     // Single active DMA descriptor
  #endif
   // DMA transfer-in-progress indicator and callback
@@ -108,14 +108,14 @@ struct {                // One-per-eye structure
  #ifdef PIXEL_DOUBLE
   uint32_t          dmaBuf[2][240]; // Two 240-pixel buffers (32bit for doubling)
  #else
-  uint16_t          dmaBuf[2][128]; // Two 128-pixel buffers
+  uint16_t          dmaBuf[2][ST77XX_SCREEN_WIDTH]; // 使用屏幕宽度定义缓冲区大小
  #endif
 #elif defined(ARDUINO_ARCH_ESP32)
   uint8_t           dmaIdx = 0; // Active DMA buffer # (alternate fill/send)
  #ifdef PIXEL_DOUBLE
   uint32_t          dmaBuf[2][240]; // Two 240-pixel buffers (32bit for doubling)
  #else
-  uint16_t          dmaBuf[2][128]; // Two 128-pixel buffers
+  uint16_t          dmaBuf[2][ST77XX_SCREEN_WIDTH]; // 使用屏幕宽度定义缓冲区大小
  #endif
 #endif
 
@@ -167,6 +167,10 @@ void setup(void) {
   Serial.begin(115200);
   //while (!Serial);
   Serial.println("Init");
+  Serial.print("Screen size: ");
+  Serial.print(ST77XX_SCREEN_WIDTH);
+  Serial.print("x");
+  Serial.println(ST77XX_SCREEN_HEIGHT);
   
 #ifdef ARDUINO_ARCH_ESP32
   randomSeed(analogRead(36)); // Seed random() from floating analog input on ESP32
@@ -457,7 +461,7 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
   eye[e].display->setAddrWindow(0, 0, 240, 240);
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // TFT
-  eye[e].display->setAddrWindow(0, 0, ST77XX_SCREEN_HEIGHT, ST77XX_SCREEN_WIDTH);
+  eye[e].display->setAddrWindow(0, 0, ST77XX_SCREEN_WIDTH, ST77XX_SCREEN_HEIGHT);
 #else // OLED
   eye[e].display->writeCommand(SSD1351_CMD_SETROW);    // Y range
   eye[e].display->spiWrite(0); eye[e].display->spiWrite(SCREEN_HEIGHT - 1);
@@ -591,7 +595,7 @@ void frame( // Process motion for a single frame of left or right eye
 
   if(!(++frames & 255)) { // Every 256 frames...
     uint32_t elapsed = (millis() - startTime) / 1000;
-    if(elapsed) Serial.println(frames / elapsed); // Print FPS
+    if(elapsed) Serial.println("FPS = " + String(frames / elapsed)); // Print FPS
   }
 
   if(++eyeIndex >= NUM_EYES) eyeIndex = 0; // Cycle through eyes, 1 per call
@@ -734,7 +738,7 @@ void frame( // Process motion for a single frame of left or right eye
   // Horizontal position is offset so that eyes are very slightly crossed
   // to appear fixated (converged) at a conversational distance.  Number
   // here was extracted from my posterior and not mathematically based.
-  // I suppose one could get all clever with a range sensor, but for now...
+  // I suppose one c9ould get all clever with a range sensor, but for now...
   if(NUM_EYES > 1) eyeX += 4;
   if(eyeX > (SCLERA_WIDTH - 128)) eyeX = (SCLERA_WIDTH - 128);
 
@@ -750,8 +754,18 @@ void frame( // Process motion for a single frame of left or right eye
           sampleY = SCLERA_HEIGHT / 2 - (eyeY + IRIS_HEIGHT / 4);
   // Eyelid is slightly asymmetrical, so two readings are taken, averaged
   if(sampleY < 0) n = 0;
-  else            n = (upper[sampleY][sampleX] +
-                       upper[sampleY][SCREEN_WIDTH - 1 - sampleX]) / 2;
+  else {
+    // 确保sampleX在有效范围内
+    if(sampleX >= SCREEN_WIDTH) sampleX = SCREEN_WIDTH - 1;
+    if(sampleX < 0) sampleX = 0;
+    
+    int16_t mirrorX = SCREEN_WIDTH - 1 - sampleX;
+    // 确保镜像点也在有效范围内
+    if(mirrorX >= SCREEN_WIDTH) mirrorX = SCREEN_WIDTH - 1;
+    if(mirrorX < 0) mirrorX = 0;
+    
+    n = (upper[sampleY][sampleX] + upper[sampleY][mirrorX]) / 2;
+  }
   uThreshold = (uThreshold * 3 + n) / 4; // Filter/soften motion
   // Lower eyelid doesn't track the same way, but seems to be pulled upward
   // by tension from the upper lid.
