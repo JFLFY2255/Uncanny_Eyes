@@ -8,9 +8,9 @@
 
 // GRAPHICS SETTINGS (appearance of eye) -----------------------------------
 
-// 定义ST7735屏幕分辨率
-#define ST7735_SCREEN_WIDTH  128  // 屏幕宽度，默认128像素
-#define ST7735_SCREEN_HEIGHT 128  // 屏幕高度，默认128像素
+// 定义ST77XX屏幕分辨率
+#define ST77XX_SCREEN_WIDTH  128  // 屏幕宽度，默认128像素
+#define ST77XX_SCREEN_HEIGHT 128  // 屏幕高度，默认128像素
 
 // If using a SINGLE EYE, you might want this next line enabled, which
 // uses a simpler "football-shaped" eye that's left/right symmetrical.
@@ -100,8 +100,8 @@ eyeInfo_t eyeInfo[] = {
   #define BACKLIGHT_MAX    255  // 背光最大值
   
   // 定义屏幕宽度和高度常量
-  #define SCREEN_WIDTH    ST7735_SCREEN_WIDTH
-  #define SCREEN_HEIGHT   ST7735_SCREEN_HEIGHT
+  #define SCREEN_WIDTH    ST77XX_SCREEN_WIDTH
+  #define SCREEN_HEIGHT   ST77XX_SCREEN_HEIGHT
 #else
   // Enable ONE of these #includes to specify the display type being used
   //#include <Adafruit_SSD1351.h>  // OLED display library -OR-

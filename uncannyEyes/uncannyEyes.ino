@@ -24,6 +24,8 @@
 #endif
 #ifdef ARDUINO_ARCH_ESP32
   #include <Arduino.h>
+  // 为ESP32定义TFT_SPI别名，以便统一代码
+  #define TFT_SPI SPI
 #endif
 
 typedef struct {        // Struct is defined before including config.h --
@@ -181,7 +183,7 @@ void setup(void) {
 
 #ifdef ARDUINO_ARCH_ESP32
   // Initialize SPI for ESP32
-  SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
+  TFT_SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
 #endif
 
   user_setup();
@@ -190,29 +192,14 @@ void setup(void) {
   for(e=0; e<NUM_EYES; e++) {
     Serial.print("Create display #"); Serial.println(e);
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
- #ifdef ARDUINO_ARCH_ESP32
-    eye[e].display     = new displayType(&SPI, eyeInfo[e].select,
-                           DISPLAY_DC, -1);
- #else
     eye[e].display     = new displayType(&TFT_SPI, eyeInfo[e].select,
                            DISPLAY_DC, -1);
- #endif
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // 128x128 TFT
- #ifdef ARDUINO_ARCH_ESP32
-    eye[e].display     = new displayType(&SPI, eyeInfo[e].select,
-                           DISPLAY_DC, -1);
- #else
     eye[e].display     = new displayType(&TFT_SPI, eyeInfo[e].select,
                            DISPLAY_DC, -1);
- #endif
 #else // OLED
- #ifdef ARDUINO_ARCH_ESP32
-    eye[e].display     = new displayType(128, 128, &SPI,
-                           eyeInfo[e].select, DISPLAY_DC, -1);
- #else
     eye[e].display     = new displayType(128, 128, &TFT_SPI,
                            eyeInfo[e].select, DISPLAY_DC, -1);
- #endif
 #endif
     eye[e].blink.state = NOBLINK;
     // If project involves only ONE eye and NO other SPI devices, its
@@ -254,13 +241,10 @@ void setup(void) {
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
     eye[e].display->init(240, 240);
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // 128x128 TFT
- #ifdef ARDUINO_ARCH_ESP32
-    // 更详细的ST7735初始化，包括额外延迟和初始化监控
-    Serial.print("Initializing ST7735 display #"); Serial.print(e);
-    Serial.print(" with dimensions "); Serial.print(ST7735_SCREEN_WIDTH);
-    Serial.print("x"); Serial.println(ST7735_SCREEN_HEIGHT);
+    Serial.print("Init ST77xx display #"); Serial.println(e);
     
-    // 尝试重置显示器
+    #ifdef ARDUINO_ARCH_ESP32
+    // ESP32需要额外的显示初始化步骤
     if(DISPLAY_RESET >= 0) {
       pinMode(DISPLAY_RESET, OUTPUT);
       digitalWrite(DISPLAY_RESET, HIGH);
@@ -270,16 +254,14 @@ void setup(void) {
       digitalWrite(DISPLAY_RESET, HIGH);
       delay(50);
     }
+    #endif
     
-    // eye[e].display->initR(INITR_MINI160x80); // 使用80x160分辨率的初始化参数
     eye[e].display->initR(INITR_144GREENTAB);
-    delay(100); // 添加延迟让显示器稳定
     
-    Serial.println("ST7735 initialization complete");
- #else
-    eye[e].display->initR(INITR_144GREENTAB);
-    Serial.print("Init ST77xx display #"); Serial.println(e);
- #endif
+    #ifdef ARDUINO_ARCH_ESP32
+    // ESP32需要额外延迟
+    delay(100); 
+    #endif
 #else // OLED
     eye[e].display->begin(SPI_FREQ);
 #endif
@@ -469,21 +451,13 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
   // Set up raw pixel dump to entire screen.  Although such writes can wrap
   // around automatically from end of rect back to beginning, the region is
   // reset on each frame here in case of an SPI glitch.
-#ifdef ARDUINO_ARCH_ESP32
-  SPI.beginTransaction(settings);
-#else
   TFT_SPI.beginTransaction(settings);
-#endif
   digitalWrite(eyeInfo[e].select, LOW);                // Chip select
 
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
   eye[e].display->setAddrWindow(0, 0, 240, 240);
 #elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // TFT
- #ifdef ARDUINO_ARCH_ESP32
-  eye[e].display->setAddrWindow(0, 0, ST7735_SCREEN_HEIGHT, ST7735_SCREEN_WIDTH);
- #else
-  eye[e].display->setAddrWindow(0, 0, 128, 128);
- #endif
+  eye[e].display->setAddrWindow(0, 0, ST77XX_SCREEN_HEIGHT, ST77XX_SCREEN_WIDTH);
 #else // OLED
   eye[e].display->writeCommand(SSD1351_CMD_SETROW);    // Y range
   eye[e].display->spiWrite(0); eye[e].display->spiWrite(SCREEN_HEIGHT - 1);
@@ -581,11 +555,7 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
 #endif
 
   digitalWrite(eyeInfo[e].select, HIGH);          // Deselect
-#ifdef ARDUINO_ARCH_ESP32
-  SPI.endTransaction();
-#else
   TFT_SPI.endTransaction();
-#endif
 }
 
 // EYE ANIMATION -----------------------------------------------------------
