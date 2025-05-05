@@ -11,6 +11,7 @@
 // 定义ST77XX屏幕分辨率
 #define ST77XX_SCREEN_WIDTH  128  // 屏幕宽度，默认128像素
 #define ST77XX_SCREEN_HEIGHT 128  // 屏幕高度，默认128像素
+#define COLOR_ORDER_REVERSE  // 颜色顺序反转
 
 // If using a SINGLE EYE, you might want this next line enabled, which
 // uses a simpler "football-shaped" eye that's left/right symmetrical.
@@ -55,7 +56,7 @@ eyeInfo_t eyeInfo[] = {
 #elif defined(ADAFRUIT_TRINKET_M0)
   {  0, -1, 0 }, // SINGLE EYE display-select, no wink, no rotation
 #elif defined(ARDUINO_ARCH_ESP32)
-  { 41, -1, 0 },
+  { 41, -1, 1 },
 #else
   {  9, 0, 0 }, // LEFT EYE display-select and wink pins, no rotation
   { 10, 2, 0 }, // RIGHT EYE display-select and wink pins, no rotation

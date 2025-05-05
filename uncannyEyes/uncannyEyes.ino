@@ -244,7 +244,8 @@ void setup(void) {
   for(e=0; e<NUM_EYES; e++) {
 #if defined(_ADAFRUIT_ST7789H_) // 240x240 TFT
     eye[e].display->init(240, 240);
-#elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_) // 128x128 TFT
+    
+#elif defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_)
     Serial.print("Init ST77xx display #"); Serial.println(e);
     
     #ifdef ARDUINO_ARCH_ESP32
@@ -260,7 +261,9 @@ void setup(void) {
     }
     #endif
     
-    eye[e].display->initR(INITR_144GREENTAB);
+    eye[e].display->initR(INITR_18BLACKTAB);
+    // eye[e].display->initR(INITR_144GREENTAB);
+    // eye[e].display->initR(INITR_MINI160x80);
     
     #ifdef ARDUINO_ARCH_ESP32
     // ESP32需要额外延迟
@@ -271,6 +274,12 @@ void setup(void) {
 #endif
     Serial.println("Rotate");
     eye[e].display->setRotation(eyeInfo[e].rotation);
+    // 设置颜色顺序失败
+    // #if defined(_ADAFRUIT_ST7735H_) || defined(_ADAFRUIT_ST77XXH_)
+    // eye[e].display->writeCommand(ST77XX_MADCTL);
+    // // eye[e].display->spiWrite(ST77XX_MADCTL_MX | ST77XX_MADCTL_MY | ST77XX_MADCTL_RGB);
+    // eye[e].display->spiWrite(ST77XX_MADCTL_MX | ST77XX_MADCTL_MY | ST7735_MADCTL_BGR);
+    // #endif
   }
   Serial.println("done");
 
@@ -502,6 +511,16 @@ void drawEye( // Renders one eye.  Inputs must be pre-clipped & valid.
           p = sclera[scleraY][scleraX];                 // Pixel = sclera
         }
       }
+      
+      #ifdef COLOR_ORDER_REVERSE
+      // 颜色顺序转换 - 交换红蓝通道 (RGB <-> BGR)
+      // 16位颜色格式: RRRRRGGGGGGBBBBB (5位红色，6位绿色，5位蓝色)
+      uint16_t r = (p >> 11) & 0x1F;        // 提取红色分量 (5位)
+      uint16_t g = (p >> 5) & 0x3F;         // 提取绿色分量 (6位)
+      uint16_t b = p & 0x1F;                // 提取蓝色分量 (5位)
+      p = (b << 11) | (g << 5) | r;         // 重组为BGR格式
+      #endif
+      
 #if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_NRF52) || defined(ARDUINO_ARCH_ESP32)
  #ifdef PIXEL_DOUBLE
       // Swap bytes, duplicate low 16 to high 16 bits, store in DMA buf
