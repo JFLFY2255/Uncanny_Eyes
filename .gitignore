@@ -1,0 +1,87 @@
+# ESP-IDF特定文件
+build/
+build_*/
+
+# sdkconfig文件包含特定于用户环境的设置，应该被忽略
+sdkconfig
+sdkconfig.old
+
+# 该文件记录了项目依赖的组件版本信息，在不同环境下可能会有差异
+# 如果需要锁定依赖版本，可以将此文件纳入版本控制
+# 如果希望每个开发者根据自己的环境自动解析依赖，则应忽略此文件
+dependencies.lock
+
+# 编译生成的文件
+*.o
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# 日志文件和临时文件
+*.log
+pytest_embedded_log/
+idf_monitor.log
+
+# 中间构建文件和测试结果
+*.bin
+*.elf
+*.map
+app_info_*.txt
+size_info_*.txt
+build_summary_*.xml
+XUNIT_RESULT.xml
+
+# ESP-IDF组件管理器输出
+managed_components/
+
+# IDE特定文件
+.idea/
+# Cursor IDE相关文件
+.cursor/
+# VS Code相关文件
+.vscode/
+# 如果需要共享某些VS Code设置，可以使用下面的方式忽略特定文件而保留其他
+# .vscode/*.log
+# .vscode/c_cpp_properties.json
+# .vscode/launch.json
+# .vscode/settings.json
+# .vscode/.browse.c_cpp.db*
+# .vscode/ipch/
+
+# 系统特定文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*~
+\#*\#
+.#*
+
+# 转换工具生成的临时文件（convert目录相关）
+*.raw
+*.dat
+*.gfx
+*.bmp.h
+
+# 其他可能的二进制文件
+*.a
+*.so
+*.dll
+*.exe
+*.out
+*.app
+
+# 大型生成的头文件
+# (如果这些是自动生成的，否则请移除这些行)
+# main/graphics/*.h
+
+# ESP-IDF特定的临时文件
+*.S
+.cache/
+*.old
+*_log.txt
+traces.txt
+core_dump_*.txt
+ota_data_initial.bin
+bootloader.bin
+partition-table.bin 

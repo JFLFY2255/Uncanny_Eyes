@@ -1,6 +1,8 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+// 注意：eyeInfo_t 结构体现在在 uncannyEyes.cpp 中定义
+
 // Pin selections here are based on the original Adafruit Learning System
 // guide for the Teensy 3.x project.  Some of these pin numbers don't even
 // exist on the smaller SAMD M0 & M4 boards, so you may need to make other
@@ -48,6 +50,10 @@
 // pin number for that eye's "wink" button (or -1 if not used), and a screen
 // rotation value (0-3) for that eye.
 
+// 将eyeInfo声明为extern以避免多重定义
+#ifndef DEFINE_EYEINFO
+extern eyeInfo_t eyeInfo[];
+#else
 eyeInfo_t eyeInfo[] = {
 #if defined(ADAFRUIT_HALLOWING)
   { 39, -1, 2 }, // SINGLE EYE display-select and wink pins, rotate 180
@@ -62,6 +68,7 @@ eyeInfo_t eyeInfo[] = {
   { 10, 2, 0 }, // RIGHT EYE display-select and wink pins, no rotation
 #endif
 };
+#endif
 
 // DISPLAY HARDWARE SETTINGS (screen type & connections) -------------------
 

@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.5)
+
+# 设置组件目录
+set(EXTRA_COMPONENT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/components)
+
+# 包含ESP-IDF的CMake文件
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+# 设置项目名称
+project(UncannyEyes) 
